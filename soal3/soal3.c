@@ -7,26 +7,26 @@
 #include <errno.h>
 #include <ctype.h>
 #include <sys/stat.h>
-
-struct args
-{
-    char *buffer;
-};
+#include <sys/stat.h>
 
 char buffExt[100];
-char buffFileName[1000];
+char buffName[1000];
 char buffFrom[1000];
-char buffTo[1000];
 char cwd[1000];
+char buffTo[1000];
 
+char delim[2] = "/";
+char delimA[2] = ".";
+
+void checkDirectory(char buff[]);
 void *process(void *arg);
-void checkDir(char buff[]);
-char *getExtension(char *name, char buff[]);
-char *getFileName(char *name, char buff[]);
+char *getExt(char *name, char buff[]);
+char *getName(char *name, char buff[]);
 
 int main(int argc, char *argv[])
 {
     char *directory;
+    // A
     if (strcmp(argv[1], "-f") == 0)
     {
         pthread_t tf[argc - 2];
@@ -40,17 +40,21 @@ int main(int argc, char *argv[])
             printf("File %d: Berhasil Dikategorikan\n", i - 1);
         }
     }
+    // c
+    else if (strcmp(argv[1], "*") == 0)
+    {
+
+        char buff[1337];
+        getcwd(buff, sizeof(buff));
+        directory = buff;
+    }
+    // b
     else if (strcmp(argv[1], "-d") == 0)
     {
         DIR *dir = opendir(argv[2]);
         if (dir)
         {
             directory = argv[2];
-        }
-        else if (ENOENT == errno)
-        {
-            printf("Directory tidak ada\n");
-            exit(1);
         }
         closedir(dir);
     }
@@ -70,18 +74,19 @@ int main(int argc, char *argv[])
     closedir(dir);
 
     pthread_t tid[count];
-    char buff[count][1337];
-    int iter = 0;
+    char buff[count][1000];
+    int iteration = 0;
 
     dir = opendir(directory);
     while ((entry = readdir(dir)) != NULL)
     {
         if (entry->d_type == DT_REG)
         {
-            sprintf(buff[iter], "%s/%s", directory, entry->d_name);
-            iter++;
+            sprintf(buff[iteration], "%s/%s", directory, entry->d_name);
+            iteration++;
         }
     }
+
     closedir(dir);
 
     for (int i = 0; i < count; i++)
@@ -124,10 +129,10 @@ void *process(void *arg)
     }
     closedir(dir);
 
-    getFileName(buffFrom, buffFileName); //misahin .extension nya
+    getName(buffFrom, buffName); //misahin .extension nya
     strcpy(buffFrom, (char *)arg);
 
-    getExtension(buffFrom, buffExt); //dapetin extension
+    getExt(buffFrom, buffExt); //dapetin extension
     for (int i = 0; i < sizeof(buffExt); i++)
     {
         buffExt[i] = tolower(buffExt[i]);
@@ -135,56 +140,54 @@ void *process(void *arg)
 
     strcpy(buffFrom, (char *)arg);
 
-    checkDir(buffExt);
+    checkDirectory(buffExt);
     // printf("File %d: Berhasil Dikategorikan\n", i);
 
-    sprintf(buffTo, "%s/%s/%s", cwd, buffExt, buffFileName);
+    sprintf(buffTo, "%s/%s/%s", cwd, buffExt, buffName);
     rename(buffFrom, buffTo);
 
     pthread_exit(0);
 }
 
-char *getFileName(char *name, char buff[])
+char *getName(char *name, char buff[])
 {
-    char *token = strtok(name, "/");
+
+    char *token = strtok(name, delim);
     while (token != NULL)
     {
         sprintf(buff, "%s", token);
-        token = strtok(NULL, "/");
+        token = strtok(NULL, delim);
     }
 }
 
-char *getExtension(char *name, char buff[])
+char *getExt(char *name, char buff[])
 {
-    // char buffFileName[1337];
-    char *token = strtok(name, "/");
+    char *token = strtok(name, delim);
     while (token != NULL)
     {
-        sprintf(buffFileName, "%s", token);
-        token = strtok(NULL, "/");
+        sprintf(buffName, "%s", token);
+        token = strtok(NULL, delim);
     }
     int count = 0;
-    token = strtok(buffFileName, ".");
+    token = strtok(buffName, delimA);
+
     while (token != NULL)
     {
         count++;
         sprintf(buff, "%s", token);
-        token = strtok(NULL, ".");
-    }
-    if (count <= 1)
-    {
-        strcpy(buff, "unknown");
+        token = strtok(NULL, delimA);
     }
 
     return buff;
 }
 
-void checkDir(char buff[])
+void checkDirectory(char name[])
 {
-    DIR *dr = opendir(buff);
+    DIR *dr = opendir(name);
+    umask(0);
     if (ENOENT == errno)
     {
-        mkdir(buff, 0775);
+        mkdir(name, 0775);
         closedir(dr);
     }
 }
