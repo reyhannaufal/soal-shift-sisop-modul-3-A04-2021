@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>
 #include <libgen.h>
 #include <pthread.h>
+#include <ctype.h>
+#define _GNU_SOURCE
 #define PORT 8080
 
 typedef struct user{
@@ -37,67 +41,61 @@ void writelog(char cmd[], char target[], user *player){
 }
 
 int state = 0; //0 not logged in //1 logged in
+int clientin = 0;
 char input[1024]; //input from client
 int new_socket;
 
-/*void *server_main_routine(void *arg){
+char* getdata(char buffer[]) {
+	memset(input,0,1024);
+	while(strlen(input)==0);
+	strcpy(buffer,input);
+	memset(input,0,1024);
+	return buffer;
+}
 
+void *server_main_routine(void *arg){
 	char buffer[1024];
+	user *client= (user*)malloc(sizeof(user)) ;
 	while(1){
-		if (state == 0){
-			if(strcmp(input,"register")==0){
-			//todo make register 
-			}
-			if(strcmp(input,"login")==0{
-			//todo make input|if login state = 1
-			}
+	if(state == 0){
+		sprintf(buffer,"pilih opsi :\n1. Register\n2. Login\n");
+		send(new_socket,buffer,1024,0);
+		getdata(buffer);
+		for(int i=0;buffer[i];i++){
+			buffer[i] = tolower(buffer[i]);
 		}
-		if (state == 1){	
-			if(strcmp(input,"add")==0){
-			//todo make add
-			}
-			if(strcmp(input,"download")==0){
-			//todo make download
-			}
-			if(strcmp(input,"delete")==0){
-			//todo make delete
-			}
-			if(strcmp(input,"see")==0){
-			//todo make see
-			}
+		if(strcmp(buffer,"1\n")==0){
+			send(new_socket,"New Username:",1024,0);
+			getdata(client->username);
+			send(new_socket,"New Password:",1024,0);
+			getdata(client->password);
+			regis(client->username,client->password);
+		}
+		else if(strcmp(buffer,"2\n")==0){
+		
+		}
+		else{
+		send(new_socket,"Invalid Command\n",1024,0);
 		}
 	}
 }
-*/
+	if(state == 1){
+		getdata(buffer);
+		for(int i=0;buffer[i];i++){
+			buffer[i] = tolower(buffer[i]);
+		}
+		if(strcmp(buffer,"add")){
+		}
+	}	
+}
+
+
 void *server_scan_routine(void *arg){
 
 	char buffer[1024];
 	while (1){
 		if(recv(new_socket,buffer,1024,0)>0){
 			strcpy(input, buffer);
-			printf("%s dan %s\n",input,buffer);
-			if (state == 0){
-				if(strcmp(input,"register")==0){
-				//todo make register 
-				}
-				if(strcmp(input,"login")==0){
-				//todo make input|if login state = 1
-				}
-			}
-			if (state == 1){	
-				if(strcmp(input,"add")==0){
-				//todo make add
-				}
-				if(strcmp(input,"download")==0){
-				//todo make download
-				}
-				if(strcmp(input,"delete")==0){
-				//todo make delete
-				}
-				if(strcmp(input,"see")==0){
-				//todo make see
-				}
-			}
 		}
 	}
 }
@@ -145,16 +143,11 @@ int main(int argc, char const *argv[]) {
 	
 	//code below
 	
-/*	pthread_t socket_thread[2];	//0 for main, 1 for scan
+	pthread_t socket_thread[2];	//0 for main, 1 for scan
 	pthread_create(&socket_thread[0],NULL,&server_scan_routine,NULL);
 	pthread_create(&socket_thread[1],NULL,&server_main_routine,NULL);
-
-	
 	pthread_join(socket_thread[0], NULL);
 	pthread_join(socket_thread[1], NULL);
-*/
-	pthread_t socket_thread;
-	pthread_create(&socket_thread,NULL,&server_scan_routine,NULL);
-	pthread_join(socket_thread,NULL);
+
 	
 }

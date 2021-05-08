@@ -17,22 +17,29 @@ pthread_t output;
 
 
 
-void *routine_output(void *arg){
+/*void *routine_output(void *arg){
 	int sock = *(int*)arg;
 	char buffer[1024] = {0};
 	while(1){
-		memset(buffer,0,1024);
 		if(recv(sock,buffer,1024,0)>1){
 		char buffer2[1024];
 		strcpy(buffer2,buffer);
+		printf("%s",buffer2);
 		}
 	}
-}
+}*/
 
 void *routine_input(void *arg){
 	int sock = *(int*)arg;
 	char input[1024];
+	char buffer[1024];
 	while(1){
+		if(recv(sock,buffer,1024,0)>1){
+		char buffer2[1024];
+		strcpy(buffer2,buffer);
+		printf("%s",buffer2);
+		}
+		
 		memset(input,0,1024);
 		fgets(input,1024,stdin);
 		send(sock,input,1024,0);
@@ -69,9 +76,9 @@ int main(int argc, char const *argv[]) {
     }
 	
 	pthread_create(&input, NULL,&routine_input, (void *)&sock);
-	pthread_create(&output, NULL,&routine_output, (void *)&sock);
+//	pthread_create(&output, NULL,&routine_output, (void *)&sock);
 	
 	pthread_join(input,NULL);
-	pthread_join(output,NULL);
+//	pthread_join(output,NULL);
     return 0;
 }
