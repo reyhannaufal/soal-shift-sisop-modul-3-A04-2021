@@ -141,7 +141,6 @@ int main(int argc, char const *argv[]) {
     }
 
 	
-	//code below
 	
 	pthread_t socket_thread[2];	//0 for main, 1 for scan
 	pthread_create(&socket_thread[0],NULL,&server_scan_routine,NULL);
