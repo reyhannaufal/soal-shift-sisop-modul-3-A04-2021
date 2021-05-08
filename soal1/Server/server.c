@@ -22,7 +22,7 @@ void regis(char username[], char password[]){
 
 void print_regis(){				//todo make send
 	FILE *fp =fopen("akun.txt","r");
-	sprintf("(uname).(password)");
+	printf("(uname).(password)");
 	char buffer[1024];
 	while(fgets(buffer,1024,fp) != NULL){
 		printf("%s",buffer);
@@ -40,7 +40,7 @@ int state = 0; //0 not logged in //1 logged in
 char input[1024]; //input from client
 int new_socket;
 
-void *server_main_routine(void *arg){
+/*void *server_main_routine(void *arg){
 
 	char buffer[1024];
 	while(1){
@@ -68,13 +68,36 @@ void *server_main_routine(void *arg){
 		}
 	}
 }
-
+*/
 void *server_scan_routine(void *arg){
 
 	char buffer[1024];
 	while (1){
 		if(recv(new_socket,buffer,1024,0)>0){
 			strcpy(input, buffer);
+			printf("%s dan %s\n",input,buffer);
+			if (state == 0){
+				if(strcmp(input,"register")==0){
+				//todo make register 
+				}
+				if(strcmp(input,"login")==0){
+				//todo make input|if login state = 1
+				}
+			}
+			if (state == 1){	
+				if(strcmp(input,"add")==0){
+				//todo make add
+				}
+				if(strcmp(input,"download")==0){
+				//todo make download
+				}
+				if(strcmp(input,"delete")==0){
+				//todo make delete
+				}
+				if(strcmp(input,"see")==0){
+				//todo make see
+				}
+			}
 		}
 	}
 }
@@ -122,15 +145,16 @@ int main(int argc, char const *argv[]) {
 	
 	//code below
 	
-	pthread_t socket_thread[2];	//0 for main, 1 for scan
-	
-	
+/*	pthread_t socket_thread[2];	//0 for main, 1 for scan
 	pthread_create(&socket_thread[0],NULL,&server_scan_routine,NULL);
-	printf("foo\n");
 	pthread_create(&socket_thread[1],NULL,&server_main_routine,NULL);
-	printf("foo\n");
+
 	
 	pthread_join(socket_thread[0], NULL);
 	pthread_join(socket_thread[1], NULL);
-	printf("bar\n");
+*/
+	pthread_t socket_thread;
+	pthread_create(&socket_thread,NULL,&server_scan_routine,NULL);
+	pthread_join(socket_thread,NULL);
+	
 }
