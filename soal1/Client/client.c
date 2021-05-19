@@ -15,34 +15,44 @@ int input_mode = 0;
 pthread_t input;
 pthread_t output;
 
+int printing;
 
-
-/*void *routine_output(void *arg){
+void *routine_output(void *arg){
 	int sock = *(int*)arg;
 	char buffer[1024] = {0};
 	while(1){
+		memset(buffer,0,1024);
 		if(recv(sock,buffer,1024,0)>1){
+		printing = 1;
 		char buffer2[1024];
 		strcpy(buffer2,buffer);
+		pthread_cancel(input);
 		printf("%s",buffer2);
+		printing = 0;
 		}
 	}
-}*/
+}
 
 void *routine_input(void *arg){
 	int sock = *(int*)arg;
 	char input[1024];
 	char buffer[1024];
 	while(1){
-		if(recv(sock,buffer,1024,0)>1){
+	/*	if(recv(sock,buffer,1024,0)>1){
 		char buffer2[1024];
 		strcpy(buffer2,buffer);
 		printf("%s",buffer2);
-		}
+		}*/
+		if(printing == 0){
+	//		memset(input,0,1024);
+			fgets(input,1024,stdin);
+			if(input[strlen(input)-1] == '\n'){
+				int len = strlen(input);
 		
-		memset(input,0,1024);
-		fgets(input,1024,stdin);
-		send(sock,input,1024,0);
+				input[--len] = '\0';
+			}
+			send(sock,input,1024,0);
+		}
 	}
 }
 
@@ -76,9 +86,14 @@ int main(int argc, char const *argv[]) {
     }
 	
 	pthread_create(&input, NULL,&routine_input, (void *)&sock);
-//	pthread_create(&output, NULL,&routine_output, (void *)&sock);
+	pthread_create(&output, NULL,&routine_output, (void *)&sock);
+	while(1){
+		if(pthread_join(input,NULL)==0){
+			pthread_create(&input,NULL,&routine_input,(void *)&sock);
+		}
+	}
 	
-	pthread_join(input,NULL);
-//	pthread_join(output,NULL);
+	//pthread_join(input,NULL);
+	pthread_join(output,NULL);
     return 0;
 }

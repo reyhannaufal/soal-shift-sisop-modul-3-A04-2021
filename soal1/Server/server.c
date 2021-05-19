@@ -1,8 +1,10 @@
 #include <stdio.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>
@@ -24,7 +26,52 @@ void regis(char username[], char password[]){
 	fclose(fp);
 }
 
-void print_regis(){				//todo make send
+int state = 0; //0 not logged in //1 logged in
+int clientin = 0;
+char input[1024]; //input from client
+int new_socket;
+
+
+void login(char username[], char password[]){
+	FILE *fp = fopen("akun.txt","r");
+	ssize_t read;
+	size_t len;
+	char auth[1024];
+	
+	sprintf(auth,"%s.%s\n",username,password);
+
+	char *string;
+	while((read = getline(&string,&len,fp))!= -1){
+		if (strcmp(auth,string)==0){
+			state = 1;
+			break;
+		}
+	}
+	fclose(fp);
+}
+
+void tambah(char buff[]){
+	FILE *fp = fopen("files.tsv","a");
+	fprintf(fp,"%s",buff);
+	fclose(fp);
+}
+
+
+void tambahF(char name[], char isi[]){
+
+}
+
+void rek_mkdir(char path[]){
+	char *tok = strrchr(path,'/');
+	if(tok != NULL){
+		*tok = 0;
+		rek_mkdir(path);
+		*tok = '/';
+	}
+	mkdir(path,0777);
+}
+
+void print_regis(){				
 	FILE *fp =fopen("akun.txt","r");
 	printf("(uname).(password)");
 	char buffer[1024];
@@ -34,16 +81,13 @@ void print_regis(){				//todo make send
 	fclose(fp);
 }
 
-void writelog(char cmd[], char target[], user *player){
+void writelog(char cmd[], char nama_file[], user *player){
 	FILE *fp = fopen("running.log","a");
-	fprintf(fp,"%s : %s (%s:%s)",cmd,target,player->username,player->password);
+	fprintf(fp,"%s : %s (%s:%s)",cmd,nama_file,player->username,player->password);
 	fclose(fp);
 }
 
-int state = 0; //0 not logged in //1 logged in
-int clientin = 0;
-char input[1024]; //input from client
-int new_socket;
+
 
 char* getdata(char buffer[]) {
 	memset(input,0,1024);
@@ -57,36 +101,79 @@ void *server_main_routine(void *arg){
 	char buffer[1024];
 	user *client= (user*)malloc(sizeof(user)) ;
 	while(1){
-	if(state == 0){
-		sprintf(buffer,"pilih opsi :\n1. Register\n2. Login\n");
-		send(new_socket,buffer,1024,0);
-		getdata(buffer);
-		for(int i=0;buffer[i];i++){
-			buffer[i] = tolower(buffer[i]);
+		if(state == 0){
+			sprintf(buffer,"pilih opsi :\n1. register\n2. login\n");
+			send(new_socket,buffer,1024,0);
+			getdata(buffer);
+			if(strcmp(buffer,"1")==0){
+				send(new_socket,"New Username:",1024,0);
+				getdata(client->username);
+				send(new_socket,"New Password:",1024,0);
+				getdata(client->password);
+				regis(client->username,client->password);
+			}
+			else if(strcmp(buffer,"2")==0){
+				send(new_socket,"Username:",1024,0);
+				getdata(client->username);
+				send(new_socket,"Password:",1024,0);
+				getdata(client->password);
+				login(client->username,client->password);
+				if (state == 1){
+					send(new_socket,"Login success\n",1024,0);
+				}
+				else{
+					send(new_socket,"invalid username or password\n",1024,0);
+				}
+			}
+			else{
+				send(new_socket,"Invalid Command\n",1024,0);
+			}
 		}
-		if(strcmp(buffer,"1\n")==0){
-			send(new_socket,"New Username:",1024,0);
-			getdata(client->username);
-			send(new_socket,"New Password:",1024,0);
-			getdata(client->password);
-			regis(client->username,client->password);
-		}
-		else if(strcmp(buffer,"2\n")==0){
-		
-		}
-		else{
-		send(new_socket,"Invalid Command\n",1024,0);
-		}
+		if(state == 1){
+			sprintf(buffer,"Masukkan command \n(add,download,delete,see)\n");
+			send(new_socket,buffer,1024,0);
+			getdata(buffer);
+			for(int i=0;buffer[i];i++){
+				buffer[i] = tolower(buffer[i]);
+			}
+			if(strcmp(buffer,"add")== 0){
+				send(new_socket,"Nama buku: ",1024,0);
+				getdata(buffer);
+				tambah(buffer);
+				writelog("Tambah",buffer,client);
+				tambah("\t");
+				send(new_socket,"Publisher: ",1024,0);
+				getdata(buffer);
+				tambah(buffer);
+				tambah("\t");
+				send(new_socket,"Tahun Publikasi: ",1024,0);
+				getdata(buffer);
+				tambah(buffer);
+				tambah("\t");
+				send(new_socket,"File Path: ",1024,0);
+				getdata(buffer);
+				tambah(buffer);
+				tambah("\n");
+			}
+			else if(strcmp(buffer,"delete")== 0){
+				send(new_socket,"Nama buku: ",1024,0);
+				getdata(buffer);
+				tambah(buffer);
+			}
+			else if(strcmp(buffer,"download")== 0){
+				send(new_socket,"Nama buku: ",1024,0);
+				getdata(buffer);
+				tambah(buffer);
+			}
+			else if(strcmp(buffer,"see")== 0){
+				
+			}
+			else{
+				send(new_socket,"Invalid Command\n",1024,0);
+			}
+		}	
 	}
-}
-	if(state == 1){
-		getdata(buffer);
-		for(int i=0;buffer[i];i++){
-			buffer[i] = tolower(buffer[i]);
-		}
-		if(strcmp(buffer,"add")){
-		}
-	}	
+		
 }
 
 
@@ -104,13 +191,16 @@ void *server_scan_routine(void *arg){
 int main(int argc, char const *argv[]) {
 	FILE *fp = fopen("akun.txt","a");
 	fclose(fp);
-	
+	fp = fopen("files.tsv","a");
+	fclose(fp);
+	fp = fopen("running.log","a");
+	fprintf 
+	fclose(fp);
+	int opt = 1;
     int server_fd, valread;
     struct sockaddr_in address;
-    int opt = 1;
     int addrlen = sizeof(address);
-    char buffer[1024] = {0};
-    char *hello = "Hello from server";
+
       
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
