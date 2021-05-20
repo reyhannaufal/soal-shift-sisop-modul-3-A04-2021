@@ -299,3 +299,6 @@ Di dalam anak process baru yang dibuat tadi, melakukan penerimaan data dengan va
         }
 ```
 Di parent process yang baru dibuat, melakukan wait data dari porcess sebelumnya. Serta menerima data dari process sebelumnya dengan fungsi dup2 dan variabel fd2. Serta melakukan perintah command "head", "-5".
+
+### Kendala:
+![Eror_01](error/soal2/Eror%2001.png)
