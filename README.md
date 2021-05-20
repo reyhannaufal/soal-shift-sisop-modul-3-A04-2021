@@ -22,7 +22,7 @@ int mat_emt[4][3], mat_ten[3][6];
 int (*hsl)[6];
 ```
 
-Pertama tid[4] untuk menyimpan thread index dengan ukuran sesuai kebutuhan. Lalu mat_emt dan mat_ten adalah matriks untuk menyimpan nilai matriks. Dan yang terakhir (* * * hsl)[6] untuk menyimpan matriks hasil yang akan digunakan sebagai shared memory.
+Pertama tid[4] untuk menyimpan thread index dengan ukuran sesuai kebutuhan. Lalu mat_emt dan mat_ten adalah matriks untuk menyimpan nilai matriks. Dan yang terakhir (* hsl)[6] untuk menyimpan matriks hasil yang akan digunakan sebagai shared memory.
 
 ```sh
 void *pengali_mat(void *arg){
@@ -88,43 +88,120 @@ Membuat forloop sebanyak thread yang dibuat untuk melakukan join thread dengan p
 Menampilkan hasil perkalian kedua matriks.
 
 
-2b. Menerima hasil matriks dari soal2a lalu dibandingkan dengan matriks baru dengan beberapa aturan untuk menghitung angka faktorial. Dan perhitungan tersebut dilakukan dengan konsep thread. 
+### 2b
+Menerima hasil matriks dari soal2a lalu dibandingkan dengan matriks baru dengan beberapa aturan untuk menghitung angka faktorial. Dan perhitungan tersebut dilakukan dengan konsep thread. 
 
-[code]
+```sh
+pthread_t tid[24];
+int (*hsl)[6];
+long long int mat_hasil[4][6];
+int mat_b[4][6];
+```
 
-Pertama tid[24] untuk menyimpan thread index dengan ukuran sesuai kebutuhan. Lalu mat_hasil dan mat_b adalah matriks untuk menyimpan nilai matriks yang nanti dihasilkan dan menyimpan nilai matriks b. Dan yang terakhir (*hsl)[6] untuk menyimpan matriks hasil yang akan digunakan sebagai shared memory.
+Pertama tid[24] untuk menyimpan thread index dengan ukuran sesuai kebutuhan. Lalu mat_hasil dan mat_b adalah matriks untuk menyimpan nilai matriks yang nanti dihasilkan dan menyimpan nilai matriks b. Dan yang terakhir (* hsl)[6] untuk menyimpan matriks hasil yang akan digunakan sebagai shared memory.
 
-[code]
+```sh
+long long int faktorial(int a, int b){
+    long long int hasil=1;
+    //if(a==0 || b==0){
+     //   hasil = 0;
+   // }else{
+   for(int i=a; i>b; i--) {
+   	hasil = hasil * i;
+   }
+    //}
+    return hasil;
+}
+```
 
 Membuat fungsi faktorial dengan parameter int a dan int b. Parameter ini digunakan untuk menghitung nilai faktorial int a dengan pembatas int b. Serta mengembalikan hasilnya. 
 
-[code]
+```sh
+void *ops_faktorial(void *arg){
+    pthread_t id = pthread_self();
+    int l = 0;
+    for(int i=0; i<4; i++) {
+        for (int j=0; j<6; j++) {
+            if(pthread_equal(id, tid[l])){
+                if(hsl[i][j]>=mat_b[i][j]) {
+                    mat_hasil[i][j] = faktorial(hsl[i][j], (hsl[i][j] - mat_b[i][j]));
+                }
+                if(mat_b[i][j]>hsl[i][j]){
+                    mat_hasil[i][j] = faktorial(hsl[i][j], 1);
+                }
+                if(mat_b[i][j] == 0 || hsl[i][j]==0){
+                    //mat_hasil[i][j] = faktorial(hsl[i][j], mat_b[i][j]);
+                    mat_hasil[i][j] = 0;
+                }
+            }
+            l++;
+        }
+    }
+}
+```
 
 Membuat fungsi ops_faktorial() yakni fungsi yang mengeksekusi matriks sesuai dengan dengan deskripsi soal dengan konsep thread. Lalu menyimpan hasil matriksnya ke variabel mat_hasil. 
 
-[code]
+```sh
+    key_t key = 1234;
+    int shmid = shmget(key,sizeof(int[4][6]),0666|IPC_CREAT); 
+    hsl = shmat(shmid,NULL,0);  
+```
 
 Lalu persiapan untuk membuat shared memory yang akan digunakan menerima data dari proses sebelumnya.
 
-[code]
+```sh
+    printf("Hasil soal2a:\n");
+    for(int i=0; i<4; i++){
+        for(int k=0; k<6; k++)
+        {   
+            printf("%d ", hsl[i][k]);
+        }
+        printf("\n");
+    }
+```
 
 Menampilkan matriks dari proses sebelumnya.
 
-[code]
+```sh
+    int l=0, err;
+    while(l<24){
+        err = pthread_create(&(tid[l]), NULL, &ops_faktorial, NULL); //pembuatan thread
+        if(err != 0){
+            printf("Can't create thread : [%s]\n", strerror(err));
+        }else{
+            // printf("Crate thread success\n");
+        }
+        l++;
+    }
+```
 
 Membuat while loop sebanyak thread yang akan dibuat, di dalamnya diisi fungsi pthread_create() yang berisi variabel untuk menyimpan id thread, dan fungsi yang dipanggil oleh thread yakni ops_faktorial(). Gunakan kondisi jika thread gagal didibuat.
 
-[code]
-
+```sh
+    for (int j=0; j<l; j++) {
+        pthread_join(tid[j], NULL);
+    }
+```
 Membuat forloop sebanyak thread yang dibuat untuk melakukan join thread dengan proses utama.
 
-[code]
+```sh
+    printf("\nMatrik hasil\n");
+    for(int i=0; i<4; i++) {
+        for(int j=0; j<6; j++) {
+            printf("%llu ", mat_hasil[i][j]);
+        }
+        printf("\n");
+    }
+```
 
 Menampilkan hasil matirks yang diperoleh.
 
-2c. Melaksanakan command “ps aux | sort -nrk 3,3 | head -5” dengan IPC Pipes. 
+### 2c
+Melaksanakan command “ps aux | sort -nrk 3,3 | head -5” dengan IPC Pipes. 
 
-[[int fd1[2], fd2[2];
+```sh
+	int fd1[2], fd2[2];
  
 	pid_t p, m; 
 
@@ -138,21 +215,23 @@ Menampilkan hasil matirks yang diperoleh.
 	{ 
 		fprintf(stderr, "Pipe Failed" ); 
 		return 1; 
-	} ]]
-
+	} 
+```
 Membuat variabel matriks fd1 dan fd2 untuk menyimpan keperluan pembuatan pipe. Melakukan pengecekan apakah pipe berhasil dibuat dengan konsep if (kondisi). 
 
-[[p = fork(); 
+```sh
+	p = fork(); 
 
 	if (p < 0) 
 	{ 
 		fprintf(stderr, "fork Failed" ); 
 		return 1; 
-	} ]]
-
+	} 
+```
 Membuat fork dan mengecek apakah fork berhasil dibuat atau tidak. 
 
-[[// Parent process 
+```sh
+	// Parent process 
 	else if (p > 0) 
 	{ 
 
@@ -166,11 +245,12 @@ Membuat fork dan mengecek apakah fork berhasil dibuat atau tidak.
         char *argv1[] = {"ps", "aux", NULL};
         execv("/bin/ps", argv1);
 
-	} ]]
-
+	} 
+```
 Di dalam parent process dari fork tadi, Melakukan eksekusi "ps aux" dengan fungsi execv. Serta melaukan pengiriman data dengan fd1 dengan fungsi dup2 ke process child.
 
-[[// child process 
+```sh
+	// child process 
 	else
 	{
         wait(NULL);
@@ -180,11 +260,12 @@ Di dalam parent process dari fork tadi, Melakukan eksekusi "ps aux" dengan fungs
         { 
             fprintf(stderr, "fork Failed" ); 
             return 1; 
-        } ]]
-
+        } 
+```
 Di child process, melakuakn wait data yang dikirim oleh parent process serta membuat fork baru dan mengecek apakah fork berhasil dibuat atau tidak. 
 
-[[else if(m > 0) 
+```sh
+	else if(m > 0) 
         {
             dup2(fd1[0], 0);
             close(fd1[1]); 
@@ -197,11 +278,12 @@ Di child process, melakuakn wait data yang dikirim oleh parent process serta mem
             execv("/bin/sort", argv1);
 
 
-        }]]
-
+        }
+```
 Di dalam anak process baru yang dibuat tadi, melakukan penerimaan data dengan variabel fd1. Serta melakukan eksekusi command "sort", "-nrk", "3,3" dengan fungsi execv. Serta melakukan pengiriman data dengan variabel fd2 dengan fungsi dup2. 
 
-[[else
+```sh
+	else
         {
             wait(NULL);
             dup2(fd2[0], 0);
@@ -214,6 +296,6 @@ Di dalam anak process baru yang dibuat tadi, melakukan penerimaan data dengan va
             char *argv1[] = {"head", "-5", NULL};
             execv("/bin/head", argv1);
             exit(0);
-        }      ]]
-
+        }
+```
 Di parent process yang baru dibuat, melakukan wait data dari porcess sebelumnya. Serta menerima data dari process sebelumnya dengan fungsi dup2 dan variabel fd2. Serta melakukan perintah command "head", "-5".
