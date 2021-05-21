@@ -302,6 +302,6 @@ Di parent process yang baru dibuat, melakukan wait data dari porcess sebelumnya.
 
 ### Kendala:
 - Error 1: Tidak bisa melakukan passing parameter ke fungsi melalui thread. Solusinya menggunakan global variabel.
-![Eror_01](error/soal2/Eror%2001.png)
+![Eror_01](screenshot/soal2/Eror 01.png
 - Error 2: Tidak bisa menjalankan pipe sebagaimana mestinya. Solusinya menggunakan nested fork.
-![Eror_02](error/soal2/Eror%2002.png)
+![Eror_02](screenshot/soal2/Eror 02.png)
