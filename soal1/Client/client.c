@@ -117,7 +117,6 @@ int main(int argc, char const *argv[]) {
 		}
 	}
 	
-	//pthread_join(input,NULL);
 	pthread_join(output,NULL);
     return 0;
 }

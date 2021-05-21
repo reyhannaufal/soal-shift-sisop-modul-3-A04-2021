@@ -24,20 +24,9 @@ typedef struct user{
 	
 }user;
 
-/*
-typedef struct buku{
-	char nama[256],publisher[256],tahun[256],path[256], ext[256];
-}buku;
-*/
-
 
 user *client[5];
 int active_client= 0;
-char path[256]; 
-
-
-
-//buku *buffer_buku;[0]
 
 
 void regis(user *client){
@@ -69,7 +58,7 @@ void tambah(char buff[]){
 }
 
 
-void tambahF(char path[]){//makefile must make dir first
+void tambahF(char path[]){
 	FILE *fp = fopen(path,"a");
 	fclose(fp);
 }
@@ -117,7 +106,7 @@ bool file_exist(char nama[256]){
 
 
 
-void see(){	//change parameter to char nama_file[] for find
+void see(){
 	int i = active_client;
 	FILE *fp = fopen("files.tsv","r");
 	char buffer[256];
@@ -241,7 +230,6 @@ void find(char keyword[256]){
 	int cursor = 0;
 	regex_t regex;
 	while(fgets(line,256,fp)){	
-	//	add for to read substring
 		regcomp(&regex,keyword,0);
 		
 		ext = strdup(line);
@@ -283,6 +271,7 @@ void *server_main_routine(void *arg){
 	int i = *(int*) arg-1;
 	char buffer[256];
 	char buffer_name[256];
+	char path[256];
 	while(1){
 		memset(buffer,0,256);	
 		if(i != active_client){
@@ -351,7 +340,6 @@ void *server_main_routine(void *arg){
 					int len =strlen(buffer);
 					buffer[--len] = '\0';
 				}
-			//	tambah(buffer);
 				getcwd(path,256);
 				sprintf(path,"%s/FILES/%s/",path,buffer);
 				rek_mkdir(path);
@@ -423,8 +411,9 @@ int main(int argc, char const *argv[]) {
 	fp = fopen("files.tsv","a");
 	fclose(fp);
 	fp = fopen("running.log","a");
-	//fprintf
+
 	fclose(fp);
+	char path[256];
 	memset(path,0,256);
 	getcwd(path,256);
 	sprintf(path,"%s/FILES",path);
@@ -465,7 +454,6 @@ int main(int argc, char const *argv[]) {
 	pthread_t socket_thread[5][2];
   	int index_client;
 	for(index_client=0;index_client<5;index_client++){
-//		printf("\n%d\n",index_client);
 		client[index_client] = (user*)malloc(sizeof(user));
 		if ((client[index_client]->sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
 		    perror("accept");
