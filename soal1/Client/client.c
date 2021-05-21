@@ -14,18 +14,46 @@ int input_mode = 0;
 
 pthread_t input;
 pthread_t output;
+int sock;
 
 int printing;
 
+
+void download(char nama_file[256]){
+	FILE *fp = fopen(nama_file,"w");
+	fclose(fp);
+	fp = fopen(nama_file,"a");
+	char buffer[256];
+	
+	while(1){
+		memset(buffer,0,256);
+		recv(sock,buffer,256,0);
+		if(strcmp(buffer,"_download_done_")==0){
+			break;
+		}
+		fprintf(fp,"%s",buffer);
+		
+	}
+	fclose(fp);
+}
+
 void *routine_output(void *arg){
 	int sock = *(int*)arg;
-	char buffer[1024] = {0};
+	char buffer[256] = {0};
 	while(1){
-		memset(buffer,0,1024);
-		if(recv(sock,buffer,1024,0)>1){
+		memset(buffer,0,256);
+		if(recv(sock,buffer,256,0)>1){
 		printing = 1;
-		char buffer2[1024];
+		char buffer2[256];
 		strcpy(buffer2,buffer);
+		if(strcmp(buffer2,"_download_start_")==0){
+			recv(sock,buffer,256,0);
+			strcpy(buffer2,buffer);
+			download(buffer2);
+			pthread_cancel(input);
+			printing = 0;
+			continue;
+		}
 		pthread_cancel(input);
 		printf("%s",buffer2);
 		printing = 0;
@@ -35,23 +63,18 @@ void *routine_output(void *arg){
 
 void *routine_input(void *arg){
 	int sock = *(int*)arg;
-	char input[1024];
-	char buffer[1024];
+	char input[256];
+	char buffer[256];
 	while(1){
-	/*	if(recv(sock,buffer,1024,0)>1){
-		char buffer2[1024];
-		strcpy(buffer2,buffer);
-		printf("%s",buffer2);
-		}*/
 		if(printing == 0){
-	//		memset(input,0,1024);
-			fgets(input,1024,stdin);
+			memset(input,0,256);
+			fgets(input,256,stdin);
 			if(input[strlen(input)-1] == '\n'){
 				int len = strlen(input);
 		
 				input[--len] = '\0';
 			}
-			send(sock,input,1024,0);
+			send(sock,input,256,0);
 		}
 	}
 }
@@ -61,10 +84,11 @@ int main(int argc, char const *argv[]) {
 
 
     struct sockaddr_in address;
-    int sock = 0, valread;
+    int valread;
+    sock = 0;
     struct sockaddr_in serv_addr;
  
-    char buffer[1024] = {0};
+    char buffer[256] = {0};
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("\n Socket creation error \n");
         return -1;
