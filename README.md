@@ -87,6 +87,9 @@ Membuat forloop sebanyak thread yang dibuat untuk melakukan join thread dengan p
 
 Menampilkan hasil perkalian kedua matriks.
 
+## Output:
+![Output_soal2a](screenshot/soal2/out_soal2a.png)
+
 
 ### 2b
 Menerima hasil matriks dari soal2a lalu dibandingkan dengan matriks baru dengan beberapa aturan untuk menghitung angka faktorial. Dan perhitungan tersebut dilakukan dengan konsep thread. 
@@ -197,6 +200,9 @@ Membuat forloop sebanyak thread yang dibuat untuk melakukan join thread dengan p
 
 Menampilkan hasil matirks yang diperoleh.
 
+## Output:
+![Output_soal2b](screenshot/soal2/out_soal2b.png)
+
 ### 2c
 Melaksanakan command “ps aux | sort -nrk 3,3 | head -5” dengan IPC Pipes. 
 
@@ -300,8 +306,11 @@ Di dalam anak process baru yang dibuat tadi, melakukan penerimaan data dengan va
 ```
 Di parent process yang baru dibuat, melakukan wait data dari porcess sebelumnya. Serta menerima data dari process sebelumnya dengan fungsi dup2 dan variabel fd2. Serta melakukan perintah command "head", "-5".
 
+## Output:
+![Output_soal2c](screenshot/soal2/out_soal2c.png)
+
 ### Kendala:
 - Error 1: Tidak bisa melakukan passing parameter ke fungsi melalui thread. Solusinya menggunakan global variabel.
-![Eror_01](screenshot/soal2/Eror 01.png
+![Eror_01](screenshot/soal2/Eror 01.png)
 - Error 2: Tidak bisa menjalankan pipe sebagaimana mestinya. Solusinya menggunakan nested fork.
 ![Eror_02](screenshot/soal2/Eror 02.png)
