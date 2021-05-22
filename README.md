@@ -166,10 +166,30 @@ void *server_main_routine(void *arg){
 				send(client[i]->sock,"Invalid Command\n",256,0);
 			}
 		}
+	if(client[i]->logged == 1){
+			sprintf(buffer,"\nMasukkan command \n(add,download,delete,see,find,exit)\n");
+			send(client[i]->sock,buffer,256,0);
+			getdata(buffer,i);
+
 ....
+	}
+			else if(strcmp(buffer,"exit")==0){
+				active_client++;
+				if(active_client>5){
+					active_client = 0;
+				}
+			}
+			else{
+				send(client[i]->sock,"Invalid Command\n",256,0);
+			}
+		}	
+	}	
+}
+
 ```
 Dalam server_main_routine, jika thread adalah milik client yang bukan client aktif, server akan terus mengirim pesan "not active client" ke client.
 Jika thread adalah milik client yang aktif, server akan memberikan opsi kepada client untuk melakukan register atau login.
+Setelah client login, client dapat memasukan command exit untuk mengindikasikan bahwa client tersebut sudah selesai, dan posisi active_client akan dipindahkan ke client berikutnya.
 ```sh
 void regis(user *client){
 	FILE *fp = fopen("akun.txt","a");
@@ -587,6 +607,76 @@ void see(){
 ```
 Fungsi see akan membaca seluruh line pada files.tsv dan mengirimkan nya ke client dengan format sesuai soal.
 
+### 1g
+```sh
+void *server_main_routine(void *arg){
+....
+
+....
+if(client[i]->logged == 1){
+		sprintf(buffer,"\nMasukkan command \n(add,download,delete,see,find,exit)\n");
+		send(client[i]->sock,buffer,256,0);
+		getdata(buffer,i);
+....
+		else if(strcmp(buffer,"find")==0){
+			send(client[i]->sock,"Masukkan keyword: ",256,0);
+			getdata(buffer,i);
+			find(buffer);
+		}
+
+```
+Saat client menjalankan fungsi find, server akan meminta keyword yang akan digunakan untuk mencari file.
+```sh
+void find(char keyword[256]){
+	int i = active_client;
+	FILE *fp = fopen("files.tsv","r");
+	char buffer[256];
+	char line[256];
+	char* token;
+	char* ext;
+	char* token_ext;
+	int cursor = 0;
+	regex_t regex;
+	while(fgets(line,256,fp)){	
+		regcomp(&regex,keyword,0);
+		
+		ext = strdup(line);
+		token_ext=strtok(ext,".");
+		token_ext=strtok(NULL,"\t");
+		
+		token = strtok(line,"\t");
+		if(regexec(&regex,token,0,NULL,0)!= 0){
+			continue;
+		}
+		sprintf(buffer,"Nama : %s \n",token);
+		send(client[i]->sock,buffer,256,0);
+		token = strtok(NULL,"\t");
+		sprintf(buffer,"Publisher : %s \n",token);
+		send(client[i]->sock,buffer,256,0);
+		token = strtok(NULL,"\t");
+		sprintf(buffer,"Tahun Publishing : %s \n",token);
+		send(client[i]->sock,buffer,256,0);
+		sprintf(buffer,"Ekstensi File : %s \n",token_ext);
+		send(client[i]->sock,buffer,256,0);
+		token = strtok(NULL,"\t");
+		sprintf(buffer,"Filepath : %s \n",token);
+		send(client[i]->sock,buffer,256,0);
+
+	}
+	fclose(fp);
+}
+```
+Fungsi find menggunakan regex untuk keyword. Jika saat membaca line dari files.tsv keyword ditemukan dalam nama file, data data dari buku akan di kirim ke client sesuai format soal, jika tidak, akan lanjutkan ke line berikutnya(jika ada).
+
+### 1h
+```sh
+void writelog(char cmd[], char nama_file[], user *client){
+	FILE *fp = fopen("running.log","a");
+	fprintf(fp,"%s : %s (%s:%s)\n",cmd,nama_file,client->username,client->password);
+	fclose(fp);
+}
+```
+Fungsi writelog untuk mencetak log ke running.log, fungsi writelog dipanggil setiap command add atau delete berhasil dijalankan.
 
 ## NO2
 
