@@ -16,27 +16,47 @@ Membuat server yang dapat menerima multiple client yang hanya melayani satu clie
 
 ```sh
 ....
-if (listen(server_fd, 5) < 0) {
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
-	pthread_t socket_thread[5][2];
-  	int index_client;
-	for(index_client=0;index_client<5;index_client++){
-//		printf("\n%d\n",index_client);
-		client[index_client] = (user*)malloc(sizeof(user));
-		if ((client[index_client]->sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
-		    perror("accept");
-		    exit(EXIT_FAILURE);
-		}
-		client[index_client]->logged = 0;
-		pthread_create(&socket_thread[index_client][0],NULL,&server_scan_routine,(void*)&index_client);
-		pthread_create(&socket_thread[index_client][1],NULL,&server_main_routine,(void*)&index_client);
-		
+int main(int argc, char const *argv[]) {
+	FILE *fp = fopen("akun.txt","a");
+	fclose(fp);
+	fp = fopen("files.tsv","a");
+	fclose(fp);
+	fp = fopen("running.log","a");
+	//fprintf
+	fclose(fp);
+	memset(path,0,256);
+	getcwd(path,256);
+	sprintf(path,"%s/FILES",path);
+	struct stat st = {0};
+	if (stat(path, &st) == -1){
+		mkdir(path,0777);
 	}
+.....
+```
+Saat server dijalankan, akan membuat beberapa file(akun.txt,files.tsv,running.log) yang diperlukan.
+```sh
+.....
+	if (listen(server_fd, 5) < 0) {
+		perror("listen");
+		exit(EXIT_FAILURE);
+	    }
+		pthread_t socket_thread[5][2];
+		int index_client;
+		for(index_client=0;index_client<5;index_client++){
+	//		printf("\n%d\n",index_client);
+			client[index_client] = (user*)malloc(sizeof(user));
+			if ((client[index_client]->sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
+			    perror("accept");
+			    exit(EXIT_FAILURE);
+			}
+			client[index_client]->logged = 0;
+			pthread_create(&socket_thread[index_client][0],NULL,&server_scan_routine,(void*)&index_client);
+			pthread_create(&socket_thread[index_client][1],NULL,&server_main_routine,(void*)&index_client);
+
+		}
 ....
 ```
-dari bagian server, akan menerima socket dari client (asumsi maksimal client yang diterima adalah 5) kemudian menjalankan 2 buah thread setelah menerima socket, satu untuk menerima input dari client(server_scan_routine), dan yang lain untuk mengirim output ke client(server_main_routine).
+Dari sisi server menerima socket dari client (asumsi maksimal client yang diterima adalah 5) kemudian menjalankan 2 buah thread untuk masing masing socket setelah diterima , satu thread untuk menerima input dari client(server_scan_routine), dan yang lain untuk mengirim output ke client(server_main_routine).
 
 ```sh
 void *server_main_routine(void *arg){
@@ -79,6 +99,7 @@ void *server_main_routine(void *arg){
 				send(client[i]->sock,"Invalid Command\n",256,0);
 			}
 		}
+....
 ```
 Dalam server_main_routine, jika thread adalah milik client yang bukan client aktif, server akan terus mengirim pesan "not active client" ke client.
 Jika thread adalah milik client yang aktif, server akan memberikan opsi kepada client untuk melakukan register atau login.
