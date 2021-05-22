@@ -10,6 +10,82 @@
 2. [NO 2](#NO2)
 3. [NO 3](#NO3)
 
+### NO1
+### 1a
+Membuat server yang dapat menerima multiple client yang hanya melayani satu client pada satu saat, dan membuat fungsi registrasi dan login untuk client.
+
+```sh
+....
+if (listen(server_fd, 5) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+	pthread_t socket_thread[5][2];
+  	int index_client;
+	for(index_client=0;index_client<5;index_client++){
+//		printf("\n%d\n",index_client);
+		client[index_client] = (user*)malloc(sizeof(user));
+		if ((client[index_client]->sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
+		    perror("accept");
+		    exit(EXIT_FAILURE);
+		}
+		client[index_client]->logged = 0;
+		pthread_create(&socket_thread[index_client][0],NULL,&server_scan_routine,(void*)&index_client);
+		pthread_create(&socket_thread[index_client][1],NULL,&server_main_routine,(void*)&index_client);
+		
+	}
+....
+```
+dari bagian server, akan menerima socket dari client (asumsi maksimal client yang diterima adalah 5) kemudian menjalankan 2 buah thread setelah menerima socket, satu untuk menerima input dari client(server_scan_routine), dan yang lain untuk mengirim output ke client(server_main_routine).
+
+```sh
+void *server_main_routine(void *arg){
+	int i = *(int*) arg-1;
+	char buffer[256];
+	char buffer_name[256];
+	while(1){
+		memset(buffer,0,256);	
+		if(i != active_client){
+			send(client[i]->sock,"not active client",256,0);
+			getdata(buffer,i);
+			continue;
+			
+		}
+	if(client[i]->logged == 0){
+			sprintf(buffer,"pilih opsi :\n1. register\n2. login\n");
+			send(client[i]->sock,buffer,256,0);
+			getdata(buffer,i);
+			if(strcmp(buffer,"1")==0){
+				send(client[i]->sock,"New Username:",256,0);
+				getdata(client[i]->username,i);
+				send(client[i]->sock,"New Password:",256,0);
+				getdata(client[i]->password,i);
+				regis(client[i]);
+			}
+			else if(strcmp(buffer,"2")==0){
+				send(client[i]->sock,"Username:",256,0);
+				getdata(client[i]->username,i);
+				send(client[i]->sock,"Password:",256,0);
+				getdata(client[i]->password,i);
+				login(client[i]);
+				if (client[i]->logged == 1){
+					send(client[i]->sock,"Login success\n",256,0);
+				}
+				else{
+					send(client[i]->sock,"invalid username or password\n",256,0);
+				}
+			}
+			else{
+				send(client[i]->sock,"Invalid Command\n",256,0);
+			}
+		}
+```
+Dalam server_main_routine, jika thread adalah milik client yang bukan client aktif, server akan terus mengirim pesan "not active client" ke client.
+Jika thread adalah milik client yang aktif, server akan memberikan opsi kepada client untuk melakukan register atau login.
+```sh
+
+```
+
 ## NO2
 
 ### 2a
