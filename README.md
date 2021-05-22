@@ -10,8 +10,10 @@
 2. [NO 2](#NO2)
 3. [NO 3](#NO3)
 
-### NO1
-### 1a
+## NO1
+
+### 1a dan 1b
+#### Server.c
 Membuat server yang dapat menerima multiple client yang hanya melayani satu client pada satu saat, dan membuat fungsi registrasi dan login untuk client.
 
 ```sh
@@ -34,30 +36,93 @@ int main(int argc, char const *argv[]) {
 	}
 .....
 ```
-Saat server dijalankan, akan membuat beberapa file(akun.txt,files.tsv,running.log) yang diperlukan.
+Saat server dijalankan, akan membuat beberapa file(akun.txt,files.tsv,running.log) yang diperlukan dan membuat direktori FILES.
+
 ```sh
 .....
-	if (listen(server_fd, 5) < 0) {
-		perror("listen");
-		exit(EXIT_FAILURE);
-	    }
-		pthread_t socket_thread[5][2];
-		int index_client;
-		for(index_client=0;index_client<5;index_client++){
-	//		printf("\n%d\n",index_client);
-			client[index_client] = (user*)malloc(sizeof(user));
-			if ((client[index_client]->sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
-			    perror("accept");
-			    exit(EXIT_FAILURE);
-			}
-			client[index_client]->logged = 0;
-			pthread_create(&socket_thread[index_client][0],NULL,&server_scan_routine,(void*)&index_client);
-			pthread_create(&socket_thread[index_client][1],NULL,&server_main_routine,(void*)&index_client);
+	
+	int opt = 1;
+    int server_fd, valread;
+    struct sockaddr_in address;
+    int addrlen = sizeof(address);
 
+      
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+      
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons( PORT );
+      
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_fd, 5) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+	pthread_t socket_thread[5][2];
+  	int index_client;
+	for(index_client=0;index_client<5;index_client++){
+		client[index_client] = (user*)malloc(sizeof(user));
+		if ((client[index_client]->sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
+		    perror("accept");
+		    exit(EXIT_FAILURE);
 		}
-....
+		client[index_client]->logged = 0;
+		pthread_create(&socket_thread[index_client][0],NULL,&server_scan_routine,(void*)&index_client);
+		pthread_create(&socket_thread[index_client][1],NULL,&server_main_routine,(void*)&index_client);
+		
+	}
+	for(index_client=0;index_client<5;index_client++){
+		pthread_join(socket_thread[index_client][0], NULL);
+		pthread_join(socket_thread[index_client][1], NULL);
+	}
+}
 ```
 Dari sisi server menerima socket dari client (asumsi maksimal client yang diterima adalah 5) kemudian menjalankan 2 buah thread untuk masing masing socket setelah diterima , satu thread untuk menerima input dari client(server_scan_routine), dan yang lain untuk mengirim output ke client(server_main_routine).
+
+Struktur dari variabel client adalah sebagai berikut
+```sh
+typedef struct user{
+	char username[256], password[256],input[256];
+	int sock,logged;
+	
+}user;
+
+user *client[5];
+int active_client= 0;
+```
+variabel client dan active_client memiliki scope global agar bisa di akses semua fungsi
+
+```sh
+char* getdata(char buffer[],int index) {
+
+	memset(client[index]->input,0,256);
+	while(strlen(client[index]->input)==0);
+	strcpy(buffer,client[index]->input);
+	memset(client[index]->input,0,256);
+	return buffer;
+}
+
+void *server_scan_routine(void *arg){
+	int i = *(int*) arg-1;
+	char buffer[256];
+	while (1){
+			recv(client[i]->sock,buffer,256,0);
+			strcpy(client[i]->input, buffer);
+	}
+}
+```
 
 ```sh
 void *server_main_routine(void *arg){
@@ -106,8 +171,422 @@ void *server_main_routine(void *arg){
 Dalam server_main_routine, jika thread adalah milik client yang bukan client aktif, server akan terus mengirim pesan "not active client" ke client.
 Jika thread adalah milik client yang aktif, server akan memberikan opsi kepada client untuk melakukan register atau login.
 ```sh
+void regis(user *client){
+	FILE *fp = fopen("akun.txt","a");
+	fprintf(fp,"%s.%s\n",client->username,client->password);
+	fclose(fp);
+}
+```
+Fungsi regis akan menulis pada file akun.txt.
+```sh
+void login(user *client){
+	ssize_t read;
+	FILE* fp = fopen("akun.txt","r");
+	size_t len;
+	char auth[256];
+	sprintf(auth,"%s.%s\n",client->username,client->password);
+	char *string;
+	while((read = getline(&string,&len,fp))!= -1){
+		if (strcmp(auth,string)==0){
+			client->logged = 1;
+			break;
+		}
+	}
+	fclose(fp);
+}
+```
+Fungsi Login akan membaca file akun.txt dan membandingkan username dan password yang dimasukkan client dengan text yang ada dalam file.
+
+#### Client.c
+```sh
+int main(int argc, char const *argv[]) {
+
+
+    struct sockaddr_in address;
+    int valread;
+    sock = 0;
+    struct sockaddr_in serv_addr;
+ 
+    char buffer[256] = {0};
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        printf("\n Socket creation error \n");
+        return -1;
+    }
+ 
+    memset(&serv_addr, '0', sizeof(serv_addr));
+  
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
+      
+    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) {
+        printf("\nInvalid address/ Address not supported \n");
+        return -1;
+    }
+  
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        printf("\nConnection Failed \n");
+        return -1;
+    }
+	
+	pthread_create(&input, NULL,&routine_input, (void *)&sock);
+	pthread_create(&output, NULL,&routine_output, (void *)&sock);
+	while(1){
+		if(pthread_join(input,NULL)==0){
+			pthread_create(&input,NULL,&routine_input,(void *)&sock);
+		}
+	}
+	
+	//pthread_join(input,NULL);
+	pthread_join(output,NULL);
+    return 0;
+}
+```
+```sh
+void *routine_output(void *arg){
+	int sock = *(int*)arg;
+	char buffer[256] = {0};
+	while(1){
+		memset(buffer,0,256);
+		if(recv(sock,buffer,256,0)>1){
+		printing = 1;
+		char buffer2[256];
+		strcpy(buffer2,buffer);
+		if(strcmp(buffer2,"_download_start_")==0){
+			recv(sock,buffer,256,0);
+			strcpy(buffer2,buffer);
+			download(buffer2);
+			pthread_cancel(input);
+			printing = 0;
+			continue;
+		}
+		pthread_cancel(input);
+		printf("%s",buffer2);
+		printing = 0;
+		}
+	}
+}
+```
+```sh
+void *routine_input(void *arg){
+	int sock = *(int*)arg;
+	char input[256];
+	char buffer[256];
+	while(1){
+		if(printing == 0){
+			memset(input,0,256);
+			fgets(input,256,stdin);
+			if(input[strlen(input)-1] == '\n'){
+				int len = strlen(input);
+		
+				input[--len] = '\0';
+			}
+			send(sock,input,256,0);
+		}
+	}
+}
 
 ```
+
+Fungsi main pada client untuk menghubungkan socket ke server, client membuat dua thread, satu untuk mencetak hasil output dari server, dan satu untuk menginput data ke server.
+Ketika client menerima output dari server, routine_output akan menghentikan thread input sehingga tidak blocking, dan thread input kembali dijalankan dengan looping di fungsi main.
+
+### 1c
+#### Server.c
+```sh
+void *server_main_routine(void *arg){
+....
+
+....
+	if(client[i]->logged == 1){
+		sprintf(buffer,"\nMasukkan command \n(add,download,delete,see,find,exit)\n");
+		send(client[i]->sock,buffer,256,0);
+		getdata(buffer,i);
+		for(int strindex=0;buffer[strindex];strindex++){
+			buffer[strindex] = tolower(buffer[strindex]);
+		}
+		if(strcmp(buffer,"add")== 0){
+			send(client[i]->sock,"Nama buku: ",256,0);
+			getdata(buffer_name,i);		
+			if(file_exist(buffer_name)){
+				send(client[i]->sock,"Buku dengan nama ini sudah ada",256,0);
+				continue;
+			}
+			tambah(buffer_name);
+			writelog("Tambah",buffer_name,client[i]);
+			tambah("\t");
+			send(client[i]->sock,"Publisher: ",256,0);
+			getdata(buffer,i);
+			tambah(buffer);
+			tambah("\t");
+			send(client[i]->sock,"Tahun Publikasi: ",256,0);
+			getdata(buffer,i);
+			tambah(buffer);
+			tambah("\t");
+			send(client[i]->sock,"File Path: ",256,0);
+			getdata(buffer,i);
+			if(buffer[strlen(buffer)-2]=='/'){
+				send(client[i]->sock,"foota ",256,0);
+				int len =strlen(buffer);
+				buffer[--len] = '\0';
+			}
+			getcwd(path,256);
+			sprintf(path,"%s/FILES/%s/",path,buffer);
+			rek_mkdir(path);
+			tambah(path);
+			sprintf(path,"%s/%s",path,buffer_name);
+			
+			tambahF(path);
+			tambah("\n");
+		}
+....
+```
+Setelah client berhasil login, server mengirim list aksi yang dapat dilakukan client, jika client melakukan 'add' client akan diminta memasukan nama buku yang akan ditambahkan, jika buku dengan nama tersebut sudah ada, perintah 'add' berhenti berjalan, jika nama buku tersebut belum ada, client akan diminta memasukan data yang dibutuhkan sesuai soal.
+Setiap server menerima data buku yang akan dimasukkan server akan memanggil fungsi untuk memasukkan data tersebut ke files.tsv melalui fungsi "tambah".
+```sh
+void tambah(char buff[]){
+	FILE *fp = fopen("files.tsv","a");
+	fprintf(fp,"%s",buff);
+	fclose(fp);
+}
+```
+Setelah data yang dibutuhkan lengkap, server akan membuat direktori sesuai path kemudian membuat file sesuai nama buku.
+```sh
+void tambahF(char path[]){
+	FILE *fp = fopen(path,"a");
+	fclose(fp);
+}
+
+void rek_mkdir(char path[]){
+	char *tok = strrchr(path,'/');
+	if(tok != NULL){
+		*tok = 0;
+		rek_mkdir(path);
+		*tok = '/';
+	}
+	mkdir(path,0777);
+}
+```
+
+### 1d
+#### Server.c
+```sh
+void *server_main_routine(void *arg){
+....
+
+....
+else if(strcmp(buffer,"download")== 0){
+				send(client[i]->sock,"Nama buku akan didownload: ",256,0);
+				getdata(buffer,i);
+				if(file_exist(buffer)){
+					send(client[i]->sock,"_download_start_",256,0);
+					download(buffer);
+					send(client[i]->sock,"_download_done_",256,0);
+				}
+				else{
+					send(client[i]->sock,"File tidak ada\n",256,0);
+				}
+....
+```
+Jika client memilih aksi download, client diminta memasukkan nama buku, jika buku tidak ada, command download akan berhenti, jika ada maka download akan dimulai.
+
+```sh
+void download(char nama[256]){		//done
+	int i = active_client;
+	FILE *fp = fopen("files.tsv","r");
+	char buffer[256], tokbuffer[256];
+	const char* token;
+	char* chr;
+	
+	int len;
+
+	while(fgets(buffer,256,fp)){
+		
+		strcpy(tokbuffer,buffer);
+		token = strtok(tokbuffer,"\t");
+		if(strcmp(token,nama)==0){
+		
+			fclose(fp);
+			token = strtok(NULL,"\t");
+			token = strtok(NULL,"\t");
+			token = strtok(NULL,"\t");
+
+			asprintf(&chr,"%s",token);
+
+			if(chr[strlen(chr)-1]=='\n'){
+				len =strlen(chr);
+				chr[--len] = '\0';
+			}
+			if(chr[strlen(chr)-1]=='/'){
+				len =strlen(chr);
+				chr[--len] = '\0';
+			}
+			sprintf(tokbuffer,"%s/%s",chr,nama);
+			send(client[i]->sock,nama,256,0);
+			fp = fopen(tokbuffer,"r");
+			while (fgets(buffer,256,fp)){
+				send(client[i]->sock,buffer,256,0);
+			}
+			
+			break;
+		}
+	}
+}
+```
+Untuk mendownload file, server akan menggunakan path file yang ada di files.tsv, kemudian isi file dibaca dan dikirim ke client.
+
+#### Client.c
+```sh
+void *routine_output(void *arg){
+...
+if(strcmp(buffer2,"_download_start_")==0){
+			recv(sock,buffer,256,0);
+			strcpy(buffer2,buffer);
+			download(buffer2);
+			pthread_cancel(input);
+			printing = 0;
+			continue;
+		}
+...
+
+void download(char nama_file[256]){
+	FILE *fp = fopen(nama_file,"w");
+	fclose(fp);
+	fp = fopen(nama_file,"a");
+	char buffer[256];
+	
+	while(1){
+		memset(buffer,0,256);
+		recv(sock,buffer,256,0);
+		if(strcmp(buffer,"_download_done_")==0){
+			break;
+		}
+		fprintf(fp,"%s",buffer);
+		
+	}
+	fclose(fp);
+}
+```
+Saat client menerima sinyal untuk memulai download, client akan membuat file sesuai dengan nama file yang dimasukkan, kemudian client akan menulis data dalam file dari server ke file di client.
+
+### 1e
+```sh
+void *server_main_routine(void *arg){
+....
+
+....
+if(client[i]->logged == 1){
+			sprintf(buffer,"\nMasukkan command \n(add,download,delete,see,find,exit)\n");
+			send(client[i]->sock,buffer,256,0);
+			getdata(buffer,i);
+....
+else if(strcmp(buffer,"delete")== 0){
+				send(client[i]->sock,"Nama buku akan didelete: ",256,0);
+				getdata(buffer,i);
+				if(file_exist(buffer)){
+					delete(buffer);
+					writelog("Hapus",buffer,client[i]);
+				}
+				else{
+					send(client[i]->sock,"File tidak ada\n",256,0);
+				}
+			}
+....
+```
+Jika nama file yang ingin dihapus ada, maka fungsi delete akan di jalankan
+
+```sh
+void delete(char nama[256]){
+	FILE* fp_lama=fopen("files.tsv","r");
+	FILE* fp_baru = fopen("baru.tsv","w");
+	fclose(fp_baru);
+	fp_baru = fopen("baru.tsv","a");
+	char* token;
+	char buffer[256],tokbuffer[256],chr[256],chr2[256];
+	int len;
+	while(fgets(buffer,256,fp_lama)){
+		strcpy(tokbuffer,buffer);
+		token = strtok(tokbuffer,"\t");
+		if(strcmp(nama,token)==0){
+			token = strtok(NULL,"\t");
+			token = strtok(NULL,"\t");
+			token = strtok(NULL,"\t");
+			sprintf(chr,"%s",token);
+
+			if(chr[strlen(chr)-1]=='\n'){
+				len =strlen(chr);
+				chr[--len] = '\0';
+			}
+			if(chr[strlen(chr)-1]=='/'){
+				len =strlen(chr);
+				chr[--len] = '\0';
+			}
+			sprintf(tokbuffer,"%s/%s",chr,nama);
+			sprintf(chr2,"%s/old-%s",chr,nama);
+			rename(tokbuffer,chr2);
+			continue;
+		}
+		fprintf(fp_baru,"%s",buffer);
+	}
+	remove("files.tsv");
+	rename("baru.tsv","files.tsv");
+	fclose(fp_lama);
+	fclose(fp_baru);
+}
+
+```
+Untuk mendelete suatu file, pertama semua line dalam files.tsv kecuali line yang berisi data file yang akan dihapus di duplikat ke baru.tsv.
+Nama file yang 'dihapus' akan diubah menjadi old-Nama file.
+
+### 1f
+```sh
+void *server_main_routine(void *arg){
+....
+
+....
+if(client[i]->logged == 1){
+			sprintf(buffer,"\nMasukkan command \n(add,download,delete,see,find,exit)\n");
+			send(client[i]->sock,buffer,256,0);
+			getdata(buffer,i);
+....
+else if(strcmp(buffer,"see")== 0){
+				see();
+			}
+....
+
+void see(){
+	int i = active_client;
+	FILE *fp = fopen("files.tsv","r");
+	char buffer[256];
+	char line[256];
+	char* token;
+	char* ext;
+	char* token_ext;
+	while(fgets(line,256,fp)){	
+		ext = strdup(line);
+		token_ext=strtok(ext,".");
+		token_ext=strtok(NULL,"\t");
+		
+		token = strtok(line,"\t");
+		sprintf(buffer,"Nama : %s \n",token);
+		send(client[i]->sock,buffer,256,0);
+		token = strtok(NULL,"\t");
+		sprintf(buffer,"Publisher : %s \n",token);
+		send(client[i]->sock,buffer,256,0);
+		token = strtok(NULL,"\t");
+		sprintf(buffer,"Tahun Publishing : %s \n",token);
+		send(client[i]->sock,buffer,256,0);
+		sprintf(buffer,"Ekstensi File : %s \n",token_ext);
+		send(client[i]->sock,buffer,256,0);
+		token = strtok(NULL,"\t");
+		sprintf(buffer,"Filepath : %s \n",token);
+		send(client[i]->sock,buffer,256,0);
+
+	}
+	fclose(fp);
+}
+```
+Fungsi see akan membaca seluruh line pada files.tsv dan mengirimkan nya ke client dengan format sesuai soal.
+
 
 ## NO2
 
