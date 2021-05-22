@@ -999,6 +999,7 @@ File 3 : Berhasil Dikategorikan
 ```
 
 <img width="1383" alt="Screen Shot 2021-05-22 at 13 58 52" src="https://user-images.githubusercontent.com/59334824/119217926-bb82aa80-bb07-11eb-9dbc-f3aef990d6e2.png">
+![4](https://user-images.githubusercontent.com/76901059/119240587-c9bdde80-bb7a-11eb-91b2-e63e40f2d566.jpg)
 
 ### `Opsi -d`
 Program juga dapat menerima opsi -d untuk melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin. Contohnya adalah seperti ini:
