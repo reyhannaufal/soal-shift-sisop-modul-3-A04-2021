@@ -17,7 +17,7 @@
 Membuat server yang dapat menerima multiple client yang hanya melayani satu client pada satu saat, dan membuat fungsi registrasi dan login untuk client.
 
 ```sh
-....
+
 int main(int argc, char const *argv[]) {
 	FILE *fp = fopen("akun.txt","a");
 	fclose(fp);
@@ -39,6 +39,7 @@ int main(int argc, char const *argv[]) {
 Saat server dijalankan, akan membuat beberapa file(akun.txt,files.tsv,running.log) yang diperlukan dan membuat direktori FILES.
 
 ```sh
+int main(int argc, char const *argv[]) {
 .....
 	
 	int opt = 1;
