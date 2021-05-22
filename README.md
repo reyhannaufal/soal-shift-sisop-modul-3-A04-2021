@@ -311,6 +311,9 @@ void *routine_input(void *arg){
 Fungsi main pada client untuk menghubungkan socket ke server, client membuat dua thread, satu untuk mencetak hasil output dari server, dan satu untuk menginput data ke server.
 Ketika client menerima output dari server, routine_output akan menghentikan thread input sehingga tidak blocking, dan thread input kembali dijalankan dengan looping di fungsi main.
 
+#### Output
+![1](screenshot/soal1/1.jpg)
+
 ### 1c
 #### Server.c
 ```sh
@@ -387,6 +390,8 @@ void rek_mkdir(char path[]){
 	mkdir(path,0777);
 }
 ```
+#### Output
+![2](screenshot/soal1/2.jpg)
 
 ### 1d
 #### Server.c
@@ -489,6 +494,9 @@ void download(char nama_file[256]){
 ```
 Saat client menerima sinyal untuk memulai download, client akan membuat file sesuai dengan nama file yang dimasukkan, kemudian client akan menulis data dalam file dari server ke file di client.
 
+#### Output
+![4](screenshot/soal1/4.jpg)
+
 ### 1e
 ```sh
 void *server_main_routine(void *arg){
@@ -558,6 +566,9 @@ void delete(char nama[256]){
 Untuk mendelete suatu file, pertama semua line dalam files.tsv kecuali line yang berisi data file yang akan dihapus di duplikat ke baru.tsv.
 Nama file yang 'dihapus' akan diubah menjadi old-Nama file.
 
+#### Output
+![6](screenshot/soal1/6.jpg)
+
 ### 1f
 ```sh
 void *server_main_routine(void *arg){
@@ -607,6 +618,9 @@ void see(){
 }
 ```
 Fungsi see akan membaca seluruh line pada files.tsv dan mengirimkan nya ke client dengan format sesuai soal.
+
+#### Output
+![3](screenshot/soal1/3.jpg)
 
 ### 1g
 ```sh
@@ -669,6 +683,9 @@ void find(char keyword[256]){
 ```
 Fungsi find menggunakan regex untuk keyword. Jika saat membaca line dari files.tsv keyword ditemukan dalam nama file, data data dari buku akan di kirim ke client sesuai format soal, jika tidak, akan lanjutkan ke line berikutnya(jika ada).
 
+#### Output
+![5](screenshot/soal1/5)
+
 ### 1h
 ```sh
 void writelog(char cmd[], char nama_file[], user *client){
@@ -678,6 +695,9 @@ void writelog(char cmd[], char nama_file[], user *client){
 }
 ```
 Fungsi writelog untuk mencetak log ke running.log, fungsi writelog dipanggil setiap command add atau delete berhasil dijalankan.
+
+#### Output
+![out 7](screenshot/soal1/7.jpg)
 
 ## NO2
 
@@ -999,7 +1019,6 @@ File 3 : Berhasil Dikategorikan
 ```
 
 <img width="1383" alt="Screen Shot 2021-05-22 at 13 58 52" src="https://user-images.githubusercontent.com/59334824/119217926-bb82aa80-bb07-11eb-9dbc-f3aef990d6e2.png">
-![4](https://user-images.githubusercontent.com/76901059/119240587-c9bdde80-bb7a-11eb-91b2-e63e40f2d566.jpg)
 
 ### `Opsi -d`
 Program juga dapat menerima opsi -d untuk melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin. Contohnya adalah seperti ini:
