@@ -10,6 +10,103 @@
 2. [NO 2](#NO2)
 3. [NO 3](#NO3)
 
+### NO1
+### 1a
+Membuat server yang dapat menerima multiple client yang hanya melayani satu client pada satu saat, dan membuat fungsi registrasi dan login untuk client.
+
+```sh
+....
+int main(int argc, char const *argv[]) {
+	FILE *fp = fopen("akun.txt","a");
+	fclose(fp);
+	fp = fopen("files.tsv","a");
+	fclose(fp);
+	fp = fopen("running.log","a");
+	//fprintf
+	fclose(fp);
+	memset(path,0,256);
+	getcwd(path,256);
+	sprintf(path,"%s/FILES",path);
+	struct stat st = {0};
+	if (stat(path, &st) == -1){
+		mkdir(path,0777);
+	}
+.....
+```
+Saat server dijalankan, akan membuat beberapa file(akun.txt,files.tsv,running.log) yang diperlukan.
+```sh
+.....
+	if (listen(server_fd, 5) < 0) {
+		perror("listen");
+		exit(EXIT_FAILURE);
+	    }
+		pthread_t socket_thread[5][2];
+		int index_client;
+		for(index_client=0;index_client<5;index_client++){
+	//		printf("\n%d\n",index_client);
+			client[index_client] = (user*)malloc(sizeof(user));
+			if ((client[index_client]->sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) {
+			    perror("accept");
+			    exit(EXIT_FAILURE);
+			}
+			client[index_client]->logged = 0;
+			pthread_create(&socket_thread[index_client][0],NULL,&server_scan_routine,(void*)&index_client);
+			pthread_create(&socket_thread[index_client][1],NULL,&server_main_routine,(void*)&index_client);
+
+		}
+....
+```
+Dari sisi server menerima socket dari client (asumsi maksimal client yang diterima adalah 5) kemudian menjalankan 2 buah thread untuk masing masing socket setelah diterima , satu thread untuk menerima input dari client(server_scan_routine), dan yang lain untuk mengirim output ke client(server_main_routine).
+
+```sh
+void *server_main_routine(void *arg){
+	int i = *(int*) arg-1;
+	char buffer[256];
+	char buffer_name[256];
+	while(1){
+		memset(buffer,0,256);	
+		if(i != active_client){
+			send(client[i]->sock,"not active client",256,0);
+			getdata(buffer,i);
+			continue;
+			
+		}
+	if(client[i]->logged == 0){
+			sprintf(buffer,"pilih opsi :\n1. register\n2. login\n");
+			send(client[i]->sock,buffer,256,0);
+			getdata(buffer,i);
+			if(strcmp(buffer,"1")==0){
+				send(client[i]->sock,"New Username:",256,0);
+				getdata(client[i]->username,i);
+				send(client[i]->sock,"New Password:",256,0);
+				getdata(client[i]->password,i);
+				regis(client[i]);
+			}
+			else if(strcmp(buffer,"2")==0){
+				send(client[i]->sock,"Username:",256,0);
+				getdata(client[i]->username,i);
+				send(client[i]->sock,"Password:",256,0);
+				getdata(client[i]->password,i);
+				login(client[i]);
+				if (client[i]->logged == 1){
+					send(client[i]->sock,"Login success\n",256,0);
+				}
+				else{
+					send(client[i]->sock,"invalid username or password\n",256,0);
+				}
+			}
+			else{
+				send(client[i]->sock,"Invalid Command\n",256,0);
+			}
+		}
+....
+```
+Dalam server_main_routine, jika thread adalah milik client yang bukan client aktif, server akan terus mengirim pesan "not active client" ke client.
+Jika thread adalah milik client yang aktif, server akan memberikan opsi kepada client untuk melakukan register atau login.
+```sh
+
+```
+
 ## NO2
 
 ### 2a
@@ -86,6 +183,9 @@ Membuat forloop sebanyak thread yang dibuat untuk melakukan join thread dengan p
 ```
 
 Menampilkan hasil perkalian kedua matriks.
+
+## Output:
+![Output_soal2a](screenshot/soal2/out_soal2a.png)
 
 
 ### 2b
@@ -197,6 +297,9 @@ Membuat forloop sebanyak thread yang dibuat untuk melakukan join thread dengan p
 
 Menampilkan hasil matirks yang diperoleh.
 
+## Output:
+![Output_soal2b](screenshot/soal2/out_soal2b.png)
+
 ### 2c
 Melaksanakan command “ps aux | sort -nrk 3,3 | head -5” dengan IPC Pipes. 
 
@@ -300,8 +403,205 @@ Di dalam anak process baru yang dibuat tadi, melakukan penerimaan data dengan va
 ```
 Di parent process yang baru dibuat, melakukan wait data dari porcess sebelumnya. Serta menerima data dari process sebelumnya dengan fungsi dup2 dan variabel fd2. Serta melakukan perintah command "head", "-5".
 
+## Output:
+![Output_soal2c](screenshot/soal2/out_soal2c.png)
+
 ### Kendala:
 - Error 1: Tidak bisa melakukan passing parameter ke fungsi melalui thread. Solusinya menggunakan global variabel.
-![Eror_01](error/soal2/Eror%2001.png)
+![Eror_01](screenshot/soal2/Eror 01.png)
 - Error 2: Tidak bisa menjalankan pipe sebagaimana mestinya. Solusinya menggunakan nested fork.
-![Eror_02](error/soal2/Eror%2002.png)
+![Eror_02](screenshot/soal2/Eror 02.png)
+
+## NO3
+
+Seorang mahasiswa bernama Alex sedang mengalami masa gabut. Di saat masa gabutnya, ia memikirkan untuk merapikan sejumlah file yang ada di laptopnya. Karena jumlah filenya terlalu banyak, Alex meminta saran ke Ayub. Ayub menyarankan untuk membuat sebuah program C agar file-file dapat dikategorikan. Program ini akan memindahkan file sesuai ekstensinya ke dalam folder sesuai ekstensinya yang folder hasilnya terdapat di working directory ketika program kategori tersebut dijalankan.
+
+### `Opsi -f`
+Program menerima opsi -f seperti contoh di atas, jadi pengguna bisa menambahkan argumen file yang bisa dikategorikan sebanyak yang diinginkan oleh pengguna. 
+
+Output yang dikeluarkan adalah seperti ini :
+```
+File 1 : Berhasil Dikategorikan (jika berhasil)
+File 2 : Sad, gagal :( (jika gagal)
+File 3 : Berhasil Dikategorikan
+```
+
+<img width="1383" alt="Screen Shot 2021-05-22 at 13 58 52" src="https://user-images.githubusercontent.com/59334824/119217926-bb82aa80-bb07-11eb-9dbc-f3aef990d6e2.png">
+
+### `Opsi -d`
+Program juga dapat menerima opsi -d untuk melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin. Contohnya adalah seperti ini:
+```bash
+$ ./soal3 -d /path/to/directory/
+```
+<img width="1431" alt="Screen Shot 2021-05-22 at 14 00 20" src="https://user-images.githubusercontent.com/59334824/119218019-2fbd4e00-bb08-11eb-9372-e913b6edf9ce.png">
+
+
+### ` Opsi \* `
+Selain menerima opsi-opsi di atas, program ini menerima opsi `\*`, contohnya ada di bawah ini:
+```bash
+$ ./soal3 \*
+```
+<img width="1429" alt="Screen Shot 2021-05-22 at 14 01 30" src="https://user-images.githubusercontent.com/59334824/119217947-e0771d80-bb07-11eb-9b86-93ba535fbeab.png">
+
+### Pembahasan
+Pembahasan fungsi dan logika dari soal 3.
+
+`main`
+```c
+    if (strcmp(argv[1], "-f") == 0)
+    {
+        pthread_t tf[argc - 2];
+        for (int i = 2; i < argc; i++)
+        {
+            if (pthread_create(&tf[i - 2], NULL, &process, (void *)argv[i]) == 1)
+            {
+                printf("File %d: Sad, gagal:(\n", i - 1);
+            }
+
+            printf("File %d: Berhasil Dikategorikan\n", i - 1);
+        }
+    }
+```
+* Memproses input file dengan argumen `-f`, lalu membuat thread sebanyak file yang dinputkan oleh user. Jika return dari fungsi create itu 1, maka thread yang dijankan rusak dan akan mengeluarkan output `File %d: Sad, gagal:(\n` apabila input berhasil dieksekusi `"File %d: Berhasil Dikategorikan\n`. Program dibuatkan thread nya dan akan menjalankan fungsi process dan akan mempasing argumen `(void *)argv[i]`
+
+```c
+else if (strcmp(argv[1], "*") == 0)
+    {
+
+        char buff[1337];
+        getcwd(buff, sizeof(buff));
+        directory = buff;
+    }
+```
+* Memproses input `\*` dan akan mengambil string dari current directory dan akan menyimpannya di variabel directory
+
+```c
+else if (strcmp(argv[1], "-d") == 0)
+    {
+        DIR *dir = opendir(argv[2]);
+        if (dir)
+        {
+            directory = argv[2];
+        }
+        closedir(dir);
+    }
+```
+* Memproses input -d dan akan mengambil directory yang diinput user dari parameter program dan akan menyimpannya di variabel directory.
+
+
+
+`Fungsi getName()`
+``` c
+char *getName(char *name, char buff[])
+{
+
+    char *token = strtok(name, delim);
+    while (token != NULL)
+    {
+        sprintf(buff, "%s", token);
+        token = strtok(NULL, delim);
+    }
+}
+```
+Fungsi mendefinisikan dua paramater yaitu `name` dan pointernya yaitu `buff[]`
+untuk store hasil dari fungsi tersebut.
+
+token akan memecah string dengan delimeter `/` lalu while loop aka berjalan
+hingga selesai dan dimasukan ke dalam buffer.
+
+
+`Fungsi getExt()`
+```c
+
+char *getExt(char *name, char buff[])
+{
+    char *token = strtok(name, delim);
+    while (token != NULL)
+    {
+        sprintf(buffName, "%s", token);
+        token = strtok(NULL, delim);
+    }
+    int count = 0;
+    token = strtok(buffName, delimA);
+
+    while (token != NULL)
+    {
+        count++;
+        sprintf(buff, "%s", token);
+        token = strtok(NULL, delimA);
+    }
+
+    return buff;
+}
+```
+Fungsi mendefinisikan dua paramater yaitu `name` dan pointernya yaitu `buff[]`
+untuk store hasil dari fungsi tersebut dan akan mereturn ekstensi dari sebuah file.
+
+`Fungsi checkDirectory()`
+```c
+void checkDirectory(char name[])
+{
+    DIR *dr = opendir(name);
+    umask(0);
+    if (ENOENT == errno)
+    {
+        mkdir(name, 0775);
+        closedir(dr);
+    }
+}
+```
+Fungsi akan membiat directory baru jika menggunakan fungsi `mkdir()`
+dengan nama yang di passing dan dengan permission `0775` yang artinya
+read dan execute lalu akan menutup kembali.
+
+`Fungsi process()`
+```c
+getcwd(cwd, sizeof(cwd));
+    //ngedapatin nama file nya
+
+    strcpy(buffFrom, (char *)arg);
+
+    if (access(buffFrom, F_OK) == -1)
+    {
+        // printf("File %s tidak ada\n", buffFrom);
+        pthread_exit(0);
+    }
+    DIR *dir = opendir(buffFrom); //open directory
+    //ngecek kl dia folder dan langsung kleuar. Kl argumen -F tapi malah folder jadi gini
+
+    if (dir)
+    {
+        // printf("file %d: Sad, gagal\n", i);
+        pthread_exit(0);
+    }
+    closedir(dir);
+
+    getName(buffFrom, buffName); //misahin .extension nya
+    strcpy(buffFrom, (char *)arg);
+
+    getExt(buffFrom, buffExt); //dapetin extension
+    for (int i = 0; i < sizeof(buffExt); i++)
+    {
+        buffExt[i] = tolower(buffExt[i]);
+    }
+
+    strcpy(buffFrom, (char *)arg);
+
+    checkDirectory(buffExt);
+    // printf("File %d: Berhasil Dikategorikan\n", i);
+
+    sprintf(buffTo, "%s/%s/%s", cwd, buffExt, buffName);
+    rename(buffFrom, buffTo);
+
+    pthread_exit(0);
+```
+* Pertama-tama menggunakan fungsi cwd dari linux akan mengembalikan string yang akan
+di sotre pada variabel cwd.
+* Lalu akan meng-copy dari parameter yang dipassing ke variabel buffFrom
+* Cek bentuk file yang diinputkan dengan menggunakan `dir`, dimana jika terbuka sebagai directory akan menampilkan error dan thread akan selesai `pthread_exit(0)`
+* menutup directory
+* mengambil nama file dan mendapatkan extensinya
+* lalu mengkonversikan ke huruf kecil dengan fungsi `toLower`
+* lalu akan merename ` sprintf(buffTo, "%s/%s/%s", cwd, buffExt, buffName)` dengan fungsi rename `rename(buffFrom, buffTo)`
+
+
