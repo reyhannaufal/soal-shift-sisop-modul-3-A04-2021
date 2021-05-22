@@ -314,3 +314,197 @@ Di parent process yang baru dibuat, melakukan wait data dari porcess sebelumnya.
 ![Eror_01](screenshot/soal2/Eror 01.png)
 - Error 2: Tidak bisa menjalankan pipe sebagaimana mestinya. Solusinya menggunakan nested fork.
 ![Eror_02](screenshot/soal2/Eror 02.png)
+
+## NO3
+
+Seorang mahasiswa bernama Alex sedang mengalami masa gabut. Di saat masa gabutnya, ia memikirkan untuk merapikan sejumlah file yang ada di laptopnya. Karena jumlah filenya terlalu banyak, Alex meminta saran ke Ayub. Ayub menyarankan untuk membuat sebuah program C agar file-file dapat dikategorikan. Program ini akan memindahkan file sesuai ekstensinya ke dalam folder sesuai ekstensinya yang folder hasilnya terdapat di working directory ketika program kategori tersebut dijalankan.
+
+### `Opsi -f`
+Program menerima opsi -f seperti contoh di atas, jadi pengguna bisa menambahkan argumen file yang bisa dikategorikan sebanyak yang diinginkan oleh pengguna. 
+
+Output yang dikeluarkan adalah seperti ini :
+```
+File 1 : Berhasil Dikategorikan (jika berhasil)
+File 2 : Sad, gagal :( (jika gagal)
+File 3 : Berhasil Dikategorikan
+```
+
+<img width="1383" alt="Screen Shot 2021-05-22 at 13 58 52" src="https://user-images.githubusercontent.com/59334824/119217926-bb82aa80-bb07-11eb-9dbc-f3aef990d6e2.png">
+
+### `Opsi -d`
+Program juga dapat menerima opsi -d untuk melakukan pengkategorian pada suatu directory. Namun pada opsi -d ini, user hanya bisa memasukkan input 1 directory saja, tidak seperti file yang bebas menginput file sebanyak mungkin. Contohnya adalah seperti ini:
+```bash
+$ ./soal3 -d /path/to/directory/
+```
+<img width="1431" alt="Screen Shot 2021-05-22 at 14 00 20" src="https://user-images.githubusercontent.com/59334824/119218019-2fbd4e00-bb08-11eb-9372-e913b6edf9ce.png">
+
+
+### ` Opsi \* `
+Selain menerima opsi-opsi di atas, program ini menerima opsi `\*`, contohnya ada di bawah ini:
+```bash
+$ ./soal3 \*
+```
+<img width="1429" alt="Screen Shot 2021-05-22 at 14 01 30" src="https://user-images.githubusercontent.com/59334824/119217947-e0771d80-bb07-11eb-9b86-93ba535fbeab.png">
+
+### Pembahasan
+Pembahasan fungsi dan logika dari soal 3.
+
+`main`
+```c
+    if (strcmp(argv[1], "-f") == 0)
+    {
+        pthread_t tf[argc - 2];
+        for (int i = 2; i < argc; i++)
+        {
+            if (pthread_create(&tf[i - 2], NULL, &process, (void *)argv[i]) == 1)
+            {
+                printf("File %d: Sad, gagal:(\n", i - 1);
+            }
+
+            printf("File %d: Berhasil Dikategorikan\n", i - 1);
+        }
+    }
+```
+* Memproses input file dengan argumen `-f`, lalu membuat thread sebanyak file yang dinputkan oleh user. Jika return dari fungsi create itu 1, maka thread yang dijankan rusak dan akan mengeluarkan output `File %d: Sad, gagal:(\n` apabila input berhasil dieksekusi `"File %d: Berhasil Dikategorikan\n`. Program dibuatkan thread nya dan akan menjalankan fungsi process dan akan mempasing argumen `(void *)argv[i]`
+
+```c
+else if (strcmp(argv[1], "*") == 0)
+    {
+
+        char buff[1337];
+        getcwd(buff, sizeof(buff));
+        directory = buff;
+    }
+```
+* Memproses input `\*` dan akan mengambil string dari current directory dan akan menyimpannya di variabel directory
+
+```c
+else if (strcmp(argv[1], "-d") == 0)
+    {
+        DIR *dir = opendir(argv[2]);
+        if (dir)
+        {
+            directory = argv[2];
+        }
+        closedir(dir);
+    }
+```
+* Memproses input -d dan akan mengambil directory yang diinput user dari parameter program dan akan menyimpannya di variabel directory.
+
+
+
+`Fungsi getName()`
+``` c
+char *getName(char *name, char buff[])
+{
+
+    char *token = strtok(name, delim);
+    while (token != NULL)
+    {
+        sprintf(buff, "%s", token);
+        token = strtok(NULL, delim);
+    }
+}
+```
+Fungsi mendefinisikan dua paramater yaitu `name` dan pointernya yaitu `buff[]`
+untuk store hasil dari fungsi tersebut.
+
+token akan memecah string dengan delimeter `/` lalu while loop aka berjalan
+hingga selesai dan dimasukan ke dalam buffer.
+
+
+`Fungsi getExt()`
+```c
+
+char *getExt(char *name, char buff[])
+{
+    char *token = strtok(name, delim);
+    while (token != NULL)
+    {
+        sprintf(buffName, "%s", token);
+        token = strtok(NULL, delim);
+    }
+    int count = 0;
+    token = strtok(buffName, delimA);
+
+    while (token != NULL)
+    {
+        count++;
+        sprintf(buff, "%s", token);
+        token = strtok(NULL, delimA);
+    }
+
+    return buff;
+}
+```
+Fungsi mendefinisikan dua paramater yaitu `name` dan pointernya yaitu `buff[]`
+untuk store hasil dari fungsi tersebut dan akan mereturn ekstensi dari sebuah file.
+
+`Fungsi checkDirectory()`
+```c
+void checkDirectory(char name[])
+{
+    DIR *dr = opendir(name);
+    umask(0);
+    if (ENOENT == errno)
+    {
+        mkdir(name, 0775);
+        closedir(dr);
+    }
+}
+```
+Fungsi akan membiat directory baru jika menggunakan fungsi `mkdir()`
+dengan nama yang di passing dan dengan permission `0775` yang artinya
+read dan execute lalu akan menutup kembali.
+
+`Fungsi process()`
+```c
+getcwd(cwd, sizeof(cwd));
+    //ngedapatin nama file nya
+
+    strcpy(buffFrom, (char *)arg);
+
+    if (access(buffFrom, F_OK) == -1)
+    {
+        // printf("File %s tidak ada\n", buffFrom);
+        pthread_exit(0);
+    }
+    DIR *dir = opendir(buffFrom); //open directory
+    //ngecek kl dia folder dan langsung kleuar. Kl argumen -F tapi malah folder jadi gini
+
+    if (dir)
+    {
+        // printf("file %d: Sad, gagal\n", i);
+        pthread_exit(0);
+    }
+    closedir(dir);
+
+    getName(buffFrom, buffName); //misahin .extension nya
+    strcpy(buffFrom, (char *)arg);
+
+    getExt(buffFrom, buffExt); //dapetin extension
+    for (int i = 0; i < sizeof(buffExt); i++)
+    {
+        buffExt[i] = tolower(buffExt[i]);
+    }
+
+    strcpy(buffFrom, (char *)arg);
+
+    checkDirectory(buffExt);
+    // printf("File %d: Berhasil Dikategorikan\n", i);
+
+    sprintf(buffTo, "%s/%s/%s", cwd, buffExt, buffName);
+    rename(buffFrom, buffTo);
+
+    pthread_exit(0);
+```
+* Pertama-tama menggunakan fungsi cwd dari linux akan mengembalikan string yang akan
+di sotre pada variabel cwd.
+* Lalu akan meng-copy dari parameter yang dipassing ke variabel buffFrom
+* Cek bentuk file yang diinputkan dengan menggunakan `dir`, dimana jika terbuka sebagai directory akan menampilkan error dan thread akan selesai `pthread_exit(0)`
+* menutup directory
+* mengambil nama file dan mendapatkan extensinya
+* lalu mengkonversikan ke huruf kecil dengan fungsi `toLower`
+* lalu akan merename ` sprintf(buffTo, "%s/%s/%s", cwd, buffExt, buffName)` dengan fungsi rename `rename(buffFrom, buffTo)`
+
+
