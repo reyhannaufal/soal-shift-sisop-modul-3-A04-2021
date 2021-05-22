@@ -684,7 +684,7 @@ void find(char keyword[256]){
 Fungsi find menggunakan regex untuk keyword. Jika saat membaca line dari files.tsv keyword ditemukan dalam nama file, data data dari buku akan di kirim ke client sesuai format soal, jika tidak, akan lanjutkan ke line berikutnya(jika ada).
 
 #### Output
-![5](screenshot/soal1/5)
+![5](screenshot/soal1/5.jpg)
 
 ### 1h
 ```sh
@@ -698,6 +698,15 @@ Fungsi writelog untuk mencetak log ke running.log, fungsi writelog dipanggil set
 
 #### Output
 ![out 7](screenshot/soal1/7.jpg)
+
+### Kendala yang ditemukan
+![e1](screenshot/soal1/e1.jpg)
+
+Pada text yang dikirim client terdapat \n yang tidak perlu
+
+![e2](screenshot/soal1/e2.jpg)
+
+Char yang mengandung file path terpotong saat digabungkan dengan fungsi sprintf
 
 ## NO2
 
