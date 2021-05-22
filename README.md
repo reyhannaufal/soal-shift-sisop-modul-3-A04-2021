@@ -24,6 +24,7 @@ int main(int argc, char const *argv[]) {
 	fp = fopen("running.log","a");
 	//fprintf
 	fclose(fp);
+	char path[256];
 	memset(path,0,256);
 	getcwd(path,256);
 	sprintf(path,"%s/FILES",path);
@@ -63,6 +64,7 @@ void *server_main_routine(void *arg){
 	int i = *(int*) arg-1;
 	char buffer[256];
 	char buffer_name[256];
+	char path[256];
 	while(1){
 		memset(buffer,0,256);	
 		if(i != active_client){
