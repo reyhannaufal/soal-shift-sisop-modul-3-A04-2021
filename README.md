@@ -708,6 +708,15 @@ Pada text yang dikirim client terdapat \n yang tidak perlu
 
 Char yang mengandung file path terpotong saat digabungkan dengan fungsi sprintf
 
+### Referensi
+- https://stackoverflow.com/questions/3643427/how-to-find-a-line-in-a-file-using-regex-in-c
+- https://www.geeksforgeeks.org/regular-expressions-in-c/
+- https://stackoverflow.com/questions/12911299/read-csv-file-in-c
+- https://www.tutorialspoint.com/c_standard_library/c_function_rename.htm
+- https://man7.org/linux/man-pages/man2/listen.2.html
+- https://stackoverflow.com/questions/3501338/c-read-file-line-by-line
+- https://stackoverflow.com/questions/7430248/creating-a-new-directory-in-c
+
 ## NO2
 
 ### 2a
